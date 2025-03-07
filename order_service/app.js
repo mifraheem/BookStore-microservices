@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const validateToken = require('./middlewares');
 const sqlite3 = require('sqlite3').verbose();
+const amqp = require('amqplib/callback_api');
 
 
 const app = express();
@@ -30,6 +31,32 @@ const db = new sqlite3.Database('./orders.db', (err) => {
 
   }
 });
+// Function to send a message to RabbitMQ
+function sendMessage(product_id, in_stock) {
+  amqp.connect('amqp://localhost', function(error0, connection) {
+      if (error0) {
+          throw error0;
+      }
+      connection.createChannel(function(error1, channel) {
+          if (error1) {
+              throw error1;
+          }
+          const queue = 'product_updates';
+          const msg = JSON.stringify({ product_id, in_stock });
+
+          channel.assertQueue(queue, {
+              durable: false
+          });
+
+          channel.sendToQueue(queue, Buffer.from(msg));
+          console.log(" [x] Sent %s", msg);
+      });
+
+      setTimeout(function() {
+          connection.close();
+      }, 500);
+  });
+}
 
 // Routes
 app.get('/', (req, res) => {
@@ -64,6 +91,7 @@ app.post('/orders', validateToken, (req, res) => {
           console.error('SQL Error:', err.message);
           return res.status(400).json({"error": err.message});
       }
+      sendMessage(product_id, false); 
       res.status(201).json({
           message: 'Order created successfully',
           order: {

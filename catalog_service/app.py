@@ -1,14 +1,11 @@
 from flask import Flask, request, jsonify, abort
-from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask import request, jsonify
 import jwt
 from functools import wraps
 from models import db, Product
-from sqlalchemy.exc import IntegrityError
 import os
-from dotenv import load_dotenv
-
+import pika, json
 from flask import current_app
 base_dir = os.path.abspath(os.path.dirname(__file__))
 env_path = os.path.join(base_dir, '../.env')  
@@ -19,6 +16,30 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-secret-key')
 db.init_app(app)
 migrate = Migrate(app, db)
+
+def start_consumer():
+    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+    channel = connection.channel()
+
+    channel.queue_declare(queue='product_updates')
+
+    def callback(ch, method, properties, body):
+        data = json.loads(body)
+        product_id = data['product_id']
+        in_stock = data['in_stock']
+        update_product_stock(product_id, in_stock)
+
+    channel.basic_consume(queue='product_updates', on_message_callback=callback, auto_ack=True)
+
+    print(' [*] Waiting for messages. To exit press CTRL+C')
+    channel.start_consuming()
+
+def update_product_stock(product_id, in_stock):
+    product = Product.query.get(product_id)
+    if product:
+        product.in_stock = in_stock
+        db.session.commit()
+        print(f"Updated product {product_id} stock status to {in_stock}")
 
 def validate_token(token):
     try:
