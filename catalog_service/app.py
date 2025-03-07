@@ -6,13 +6,17 @@ import jwt
 from functools import wraps
 from models import db, Product
 from sqlalchemy.exc import IntegrityError
+import os
+from dotenv import load_dotenv
 
 from flask import current_app
+base_dir = os.path.abspath(os.path.dirname(__file__))
+env_path = os.path.join(base_dir, '../.env')  
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///catalog.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'django-insecure-fnvdaau90ghv4dfbxnikx*sn2h4rcprla$s12e&pl9y5=j3+w+'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-secret-key')
 db.init_app(app)
 migrate = Migrate(app, db)
 
