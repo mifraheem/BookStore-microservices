@@ -7,6 +7,9 @@ from models import db, Product
 import os
 import pika, json
 from flask import current_app
+from threading import Thread
+from sqlalchemy.orm import scoped_session, sessionmaker
+
 base_dir = os.path.abspath(os.path.dirname(__file__))
 env_path = os.path.join(base_dir, '../.env')  
 
@@ -18,28 +21,45 @@ db.init_app(app)
 migrate = Migrate(app, db)
 
 def start_consumer():
-    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
-    channel = connection.channel()
+    try:
+        connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+        channel = connection.channel()
+        channel.queue_declare(queue='product_updates')
 
-    channel.queue_declare(queue='product_updates')
+        def callback(ch, method, properties, body):
+            try:
+                data = json.loads(body)
+                product_id = data['product_id']
+                in_stock = data['in_stock']
 
-    def callback(ch, method, properties, body):
-        data = json.loads(body)
-        product_id = data['product_id']
-        in_stock = data['in_stock']
-        update_product_stock(product_id, in_stock)
+                with app.app_context():
+                    session = Session()
+                    update_product_stock(product_id, in_stock, session)
+            except Exception as e:
+                print(f"Error processing message: {e}")
 
-    channel.basic_consume(queue='product_updates', on_message_callback=callback, auto_ack=True)
+        channel.basic_consume(queue='product_updates', on_message_callback=callback, auto_ack=True)
+        print(' [*] Waiting for messages. To exit press CTRL+C')
+        channel.start_consuming()
+    except pika.exceptions.AMQPConnectionError:
+        print("Connection to RabbitMQ failed")
+    except Exception as e:
+        print(f"Unhandled exception: {e}")
 
-    print(' [*] Waiting for messages. To exit press CTRL+C')
-    channel.start_consuming()
 
-def update_product_stock(product_id, in_stock):
-    product = Product.query.get(product_id)
-    if product:
-        product.in_stock = in_stock
-        db.session.commit()
-        print(f"Updated product {product_id} stock status to {in_stock}")
+def update_product_stock(product_id, in_stock, session):
+    try:
+        product = session.get(Product,product_id)
+        if product:
+            product.in_stock = in_stock
+            session.commit()
+            print(f"Updated product {product_id} stock status to {in_stock}")
+    except Exception as e:
+        session.rollback()
+        print(f"Error updating product stock: {e}")
+    finally:
+        session.close()
+
 
 def validate_token(token):
     try:
@@ -128,5 +148,15 @@ def delete_product(product_id):
     db.session.commit()
     return jsonify({'message': 'Product deleted'}), 204
 
+
+
+
+
+
 if __name__ == '__main__':
+    with app.app_context():
+        Session = scoped_session(sessionmaker(bind=db.engine))
+
+    thread = Thread(target=start_consumer)
+    thread.start()
     app.run(debug=True)
