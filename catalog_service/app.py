@@ -159,4 +159,4 @@ if __name__ == '__main__':
 
     thread = Thread(target=start_consumer)
     thread.start()
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
