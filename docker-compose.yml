@@ -1,4 +1,43 @@
 services:
+  auth:
+    image: ifraheem/bs-auth:1.2
+    container_name: bs-auth
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    restart: always
+
+  catalog:
+    image: ifraheem/bs-catalog:1.2
+    container_name: bs-catalog
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    restart: always
+
+  order:
+    image: ifraheem/bs-orders:1.1
+    container_name: bs-orders
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    restart: always
+
+  gateway:
+    image: ifraheem/bs-gat:1.3
+    container_name: bs-gateway
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      - auth
+      - catalog
+      - order
+    restart: always
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq

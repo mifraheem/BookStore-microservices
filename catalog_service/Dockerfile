@@ -11,9 +11,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # copy the content of the local src directory to the working directory
 COPY . .
 # initialize, migrate and upgrade database
-RUN python -m flask db init
-RUN python -m flask db migrate
-RUN python -m flask db upgrade
+RUN flask db migrate && flask db upgrade
+
 
 # expose the port 5000
 EXPOSE 5000

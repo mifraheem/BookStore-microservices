@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify, abort
 from flask_migrate import Migrate
 from flask import request, jsonify
 import jwt
+from jwt import ExpiredSignatureError, InvalidTokenError
+
 from functools import wraps
 from models import db, Product
 import os
@@ -11,7 +13,7 @@ from threading import Thread
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 base_dir = os.path.abspath(os.path.dirname(__file__))
-env_path = os.path.join(base_dir, '../.env')  
+env_path = os.path.join(base_dir, '.env')  
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///catalog.db'
@@ -64,10 +66,10 @@ def update_product_stock(product_id, in_stock, session):
 def validate_token(token):
     try:
         payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
-        return payload  # Ensure that this returns a dictionary
-    except jwt.ExpiredSignatureError:
+        return payload
+    except ExpiredSignatureError:
         abort(401, description='Token has expired')
-    except jwt.InvalidTokenError:
+    except InvalidTokenError:
         abort(403, description='Invalid token')
 
 

@@ -1,6 +1,7 @@
-const envVar = require('dotenv').config({ path: '../.env' }); 
+require('dotenv').config(); // <- this loads the .env variables
 
 const jwt = require('jsonwebtoken');
+
 const validateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -10,7 +11,7 @@ const validateToken = (req, res, next) => {
     }
 
     try {
-        const decoded = jwt.verify(token, envVar.parsed.SECRET_KEY, {
+        const decoded = jwt.verify(token, process.env.SECRET_KEY, {
             algorithms: ['HS256']
         });
 

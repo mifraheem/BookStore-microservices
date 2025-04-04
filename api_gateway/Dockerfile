@@ -22,7 +22,8 @@
   
   # Copy the built binary from the builder stage
   COPY --from=builder /app/main .
-  
+  COPY --from=builder /app/.env .
+
   # Expose application port (if required)
   EXPOSE 8080
   
