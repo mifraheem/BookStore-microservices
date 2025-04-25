@@ -3,7 +3,7 @@ const bodyParser = require('body-parser');
 const validateToken = require('./middlewares');
 const sqlite3 = require('sqlite3').verbose();
 const amqp = require('amqplib/callback_api');
-
+require('dotenv').config(); 
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -33,7 +33,7 @@ const db = new sqlite3.Database('./orders.db', (err) => {
 });
 // Function to send a message to RabbitMQ
 function sendMessage(product_id, in_stock) {
-  amqp.connect('amqp://localhost', function (error0, connection) {
+  amqp.connect(process.env.RABBITMQ_URL, function (error0, connection) {
     if (error0) {
       console.error('RabbitMQ connection failed:', error0.message);
       return;

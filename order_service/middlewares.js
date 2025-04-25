@@ -1,4 +1,4 @@
-require('dotenv').config(); // <- this loads the .env variables
+require('dotenv').config(); 
 
 const jwt = require('jsonwebtoken');
 

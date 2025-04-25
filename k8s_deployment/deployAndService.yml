@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bookstore-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: bookstore-app
+  template:
+    metadata:
+      labels:
+        app: bookstore-app
+    spec:
+      containers:
+        - name: bookstore-auth
+          image: ifraheem/bs-auth:1.2
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: bookstore-env
+        - name: bookstore-catalog
+          image: ifraheem/bs-catalog:1.2
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - configMapRef:
+                name: bookstore-env
+        - name: bookstore-order
+          image: ifraheem/bs-orders:1.1
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: bookstore-env
+        - name: bookstore-gateway
+          image: ifraheem/bs-gat:1.4
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: bookstore-env
+        - name: rabbitmq
+          image: rabbitmq:3-management
+          ports:
+            - containerPort: 5672
+            - containerPort: 15672
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              value: guest
+            - name: RABBITMQ_DEFAULT_PASS
+              value: guest
+          volumeMounts:
+            - name: rabbitmq-data
+              mountPath: /var/lib/rabbitmq
+      volumes:
+        - name: rabbitmq-data
+          emptyDir: {}

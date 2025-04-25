@@ -19,12 +19,13 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///catalog.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-secret-key')
+app.config['RABBITMQ_HOST'] = os.getenv('RABBITMQ_HOST', 'rabbitmq')
 db.init_app(app)
 migrate = Migrate(app, db)
 
 def start_consumer():
     try:
-        connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+        connection = pika.BlockingConnection(pika.ConnectionParameters(current_app.config['RABBITMQ_HOST']))
         channel = connection.channel()
         channel.queue_declare(queue='product_updates')
 
