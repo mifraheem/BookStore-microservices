@@ -19,7 +19,8 @@ func main() {
 	}
 	http.HandleFunc("/", handleRequestAndRedirect)
 	log.Println("Server starting on port 8080...\n\n\thttp://localhost:8080/")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe("0.0.0.0:8080", nil))
+
 }
 
 func handleRequestAndRedirect(w http.ResponseWriter, r *http.Request) {
