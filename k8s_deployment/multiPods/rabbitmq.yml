@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bs-rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bs-rabbitmq-app
+  template:
+    metadata:
+      labels:
+        app: bs-rabbitmq-app
+    spec:
+      containers:
+        - name: bs-rabbitmq-app
+          image: rabbitmq:3-management
+          ports:
+            - containerPort: 5672    # Main RabbitMQ port
+            - containerPort: 15672   # Management UI port
+          envFrom:
+            - configMapRef:
+                name: bookstore-env
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              value: guest
+            - name: RABBITMQ_DEFAULT_PASS
+              value: guest
+          volumeMounts:
+            - name: rabbitmq-data
+              mountPath: /var/lib/rabbitmq
+      volumes:
+        - name: rabbitmq-data
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-bs-rabbitmq-app
+spec:
+  ports:
+    - name: rabbitmq
+      port: 5672
+      targetPort: 5672
+    - name: rabbitmq-ui
+      port: 15672
+      targetPort: 15672
+  selector:
+    app: bs-rabbitmq-app
+  type: LoadBalancer

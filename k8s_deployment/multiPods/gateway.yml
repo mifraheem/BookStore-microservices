@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bs-gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: bs-gateway-app
+  template:
+    metadata:
+      labels:
+        app: bs-gateway-app
+    spec:
+      containers:
+        - name: bs-gateway-app
+          image: ifraheem/bs-gat:1.4
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: bookstore-env
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-bs-gateway-app
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: bs-catalog-app
+  type: LoadBalancer

@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bs-catalog
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: bs-catalog-app
+  template:
+    metadata:
+      labels:
+        app: bs-catalog-app
+    spec:
+      containers:
+        - name: bs-catalog-app
+          image: ifraheem/bs-catalog:1.2
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - configMapRef:
+                name: bookstore-env
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-bs-catalog-app
+spec:
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000
+  selector:
+    app: bs-catalog-app
+  type: LoadBalancer

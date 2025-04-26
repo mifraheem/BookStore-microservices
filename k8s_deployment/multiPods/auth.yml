@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bs-auth
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: bs-auth-app
+  template:
+    metadata:
+      labels:
+        app: bs-auth-app
+    spec:
+      containers:
+        - name: bs-auth-app
+          image: ifraheem/bs-auth:1.2
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: bookstore-env
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-bs-auth-app
+spec:
+  ports:
+    - name: http
+      port: 8000 
+      targetPort: 8000
+  selector:
+    app: bs-auth-app
+  type: LoadBalancer
