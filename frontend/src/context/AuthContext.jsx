@@ -2,6 +2,9 @@
 import { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import Cookies from 'js-cookie'; // Add at top
+import { jwtDecode } from 'jwt-decode';
+
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
@@ -52,13 +55,18 @@ export const AuthProvider = ({ children }) => {
       });
   
       if (response.data && response.data.access) {
+        // Decode token to extract user_id
+        const decoded = jwtDecode(response.data.access);
         const userData = {
           username,
-          token: response.data.access,
+          user_id: decoded.user_id, // 👈 pulled from JWT payload
         };
   
-        setCurrentUser(userData);
+        Cookies.set('access_token', response.data.access, { expires: 7 });
+        Cookies.set('refresh_token', response.data.refresh, { expires: 7 });
         localStorage.setItem('bookstore_user', JSON.stringify(userData));
+        setCurrentUser(userData);
+  
         return { success: true };
       } else {
         return { success: false, error: 'Invalid response from server' };
@@ -71,6 +79,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
   
+    
 
   const logout = () => {
     setCurrentUser(null);

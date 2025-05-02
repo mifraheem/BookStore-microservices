@@ -4,11 +4,13 @@ const validateToken = require('./middlewares');
 const sqlite3 = require('sqlite3').verbose();
 const amqp = require('amqplib/callback_api');
 require('dotenv').config(); 
+const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
+app.use(cors({ origin: '*' }));
 app.use(bodyParser.json());
 
 // Database connection

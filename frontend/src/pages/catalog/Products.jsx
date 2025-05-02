@@ -1,56 +1,65 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import axios from 'axios';
 import BookCard from '../../components/common/BookCard';
 import SearchBar from '../../components/common/SearchBar';
-import allBooks from '../../data/books';
+
+const CATALOG_BASE_URL = import.meta.env.VITE_CATALOG_SERVICE;
 
 const Products = () => {
   const [books, setBooks] = useState([]);
+  const [filteredBooks, setFilteredBooks] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Get unique categories from books
-  const categories = ['All', ...new Set(allBooks.map(book => book.category))];
-
-  // Filter books based on search query and category
   useEffect(() => {
-    setLoading(true);
-    
-    // Simulate API request delay
-    const timer = setTimeout(() => {
-      let filteredBooks = [...allBooks];
-      
-      // Filter by search query
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        filteredBooks = filteredBooks.filter(book => 
-          book.title.toLowerCase().includes(query) || 
-          book.author.toLowerCase().includes(query) ||
-          book.category.toLowerCase().includes(query)
-        );
+    const fetchBooks = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get(`${CATALOG_BASE_URL}products`);
+        if (Array.isArray(response.data)) {
+          setBooks(response.data);
+          setFilteredBooks(response.data);
+        } else {
+          console.error('Invalid response format:', response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch books:', error);
+      } finally {
+        setLoading(false);
       }
-      
-      // Filter by category
-      if (selectedCategory && selectedCategory !== 'All') {
-        filteredBooks = filteredBooks.filter(book => 
-          book.category === selectedCategory
-        );
-      }
-      
-      setBooks(filteredBooks);
-      setLoading(false);
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, [searchQuery, selectedCategory]);
+    };
 
-  // Handle search
+    fetchBooks();
+  }, []);
+
+  const categories = ['All', ...new Set(books.map(book => book.in_stock ? 'In Stock' : 'Out of Stock'))];
+
+  useEffect(() => {
+    let filtered = [...books];
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(book =>
+        book.name?.toLowerCase().includes(q) ||
+        book.description?.toLowerCase().includes(q)
+      );
+    }
+
+    if (selectedCategory && selectedCategory !== 'All') {
+      filtered = filtered.filter(book =>
+        selectedCategory === 'In Stock' ? book.in_stock : !book.in_stock
+      );
+    }
+
+    setFilteredBooks(filtered);
+  }, [searchQuery, selectedCategory, books]);
+
   const handleSearch = (query) => {
     setSearchQuery(query);
   };
 
-  // Handle category filter
   const handleCategoryChange = (e) => {
     setSelectedCategory(e.target.value);
   };
@@ -58,14 +67,13 @@ const Products = () => {
   return (
     <div>
       <h2>Book Catalog</h2>
-      
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
         <SearchBar onSearch={handleSearch} />
-        
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="form-group" 
+          className="form-group"
           style={{ minWidth: '200px', marginTop: '16px', marginBottom: '16px' }}
         >
           <select
@@ -73,41 +81,30 @@ const Products = () => {
             onChange={handleCategoryChange}
             className="form-control"
           >
-            <option value="">All Categories</option>
-            {categories.filter(cat => cat !== 'All').map(category => (
-              <option key={category} value={category}>
-                {category}
-              </option>
+            {categories.map(category => (
+              <option key={category} value={category}>{category}</option>
             ))}
           </select>
         </motion.div>
       </div>
-      
+
       {loading ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center py-12"
-        >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
           <p>Loading books...</p>
         </motion.div>
-      ) : books.length > 0 ? (
-        <motion.div 
+      ) : filteredBooks.length > 0 ? (
+        <motion.div
           className="book-grid"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ staggerChildren: 0.1 }}
         >
-          {books.map(book => (
+          {filteredBooks.map(book => (
             <BookCard key={book.id} book={book} />
           ))}
         </motion.div>
       ) : (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center py-12"
-        >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
           <p>No books found matching your search.</p>
         </motion.div>
       )}

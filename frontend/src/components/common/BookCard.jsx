@@ -4,23 +4,14 @@ import { useCart } from '../../context/CartContext';
 
 const BookCard = ({ book }) => {
   const { addToCart } = useCart();
-  
-  // Extract first letter for the book image
-  const firstLetter = book.title.charAt(0).toUpperCase();
-  
-  // Generate a consistent background color based on the book id
+
+  const title = book?.name || 'Untitled';
+  const firstLetter = title.charAt(0).toUpperCase();
+
   const getBackgroundColor = (id) => {
     const colors = [
-      '#E9D5FF', // Purple 200
-      '#DBEAFE', // Blue 100
-      '#D1FAE5', // Green 100
-      '#FEF3C7', // Yellow 100
-      '#FEE2E2', // Red 100
-      '#FFEDD5', // Orange 100
-      '#F5F3FF', // Violet 100
-      '#E0E7FF', // Indigo 100
-      '#CCFBF1', // Teal 100
-      '#F3F4F6'  // Gray 100
+      '#E9D5FF', '#DBEAFE', '#D1FAE5', '#FEF3C7', '#FEE2E2',
+      '#FFEDD5', '#F5F3FF', '#E0E7FF', '#CCFBF1', '#F3F4F6'
     ];
     return colors[id % colors.length];
   };
@@ -36,13 +27,10 @@ const BookCard = ({ book }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      whileHover={{ 
-        y: -5,
-        transition: { duration: 0.2 }
-      }}
+      whileHover={{ y: -5, transition: { duration: 0.2 } }}
     >
       <Link to={`/products/${book.id}`} className="book-card card">
-        <div 
+        <div
           className="book-image"
           style={{ backgroundColor: getBackgroundColor(book.id) }}
         >
@@ -55,11 +43,11 @@ const BookCard = ({ book }) => {
           </motion.span>
         </div>
         <div className="book-content">
-          <h3 className="book-title">{book.title}</h3>
-          <p className="book-author">by {book.author}</p>
+          <h3 className="book-title">{title}</h3>
+          <p className="book-author">by Author #{book?.author || 'N/A'}</p>
           <div className="flex justify-between items-center">
-            <p className="book-price">${book.price.toFixed(2)}</p>
-            <motion.button 
+            <p className="book-price">${book?.price?.toFixed(2) || '0.00'}</p>
+            <motion.button
               className="button button-primary"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

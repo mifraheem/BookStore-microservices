@@ -11,11 +11,13 @@ import pika, json
 from flask import current_app
 from threading import Thread
 from sqlalchemy.orm import scoped_session, sessionmaker
+from flask_cors import CORS
 
 base_dir = os.path.abspath(os.path.dirname(__file__))
 env_path = os.path.join(base_dir, '.env')  
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}}) 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///catalog.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-secret-key')
@@ -150,11 +152,6 @@ def delete_product(product_id):
     db.session.delete(product)
     db.session.commit()
     return jsonify({'message': 'Product deleted'}), 204
-
-
-
-
-
 
 if __name__ == '__main__':
     with app.app_context():

@@ -14,14 +14,14 @@ spec:
     spec:
       containers:
         - name: bookstore-auth
-          image: ifraheem/bs-auth:1.2
+          image: ifraheem/bs-auth:1.4
           ports:
             - containerPort: 8000
           envFrom:
             - configMapRef:
                 name: bookstore-env
         - name: bookstore-catalog
-          image: ifraheem/bs-catalog:1.2
+          image: ifraheem/bs-catalog:1.3
           ports:
             - containerPort: 5000
           envFrom:

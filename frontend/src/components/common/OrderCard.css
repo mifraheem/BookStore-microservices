@@ -1,0 +1,100 @@
+.order-card-container {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+  border: 1px solid #e5e7eb;
+  transition: box-shadow 0.3s ease;
+}
+
+.order-card-container:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.order-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.order-card-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1f2937;
+}
+
+.customer-name {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.order-card-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.order-card-details label {
+  font-weight: 600;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.order-card-details p {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.order-card-footer {
+  text-align: right;
+}
+
+.order-card-footer a {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.order-card-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Badge Styles */
+.badge {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  text-transform: capitalize;
+}
+
+.badge.pending {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
+.badge.delivered {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.badge.shipped {
+  background-color: #fef9c3;
+  color: #ca8a04;
+}
+
+.badge.processing {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.badge.default {
+  background-color: #e5e7eb;
+  color: #6b7280;
+}
