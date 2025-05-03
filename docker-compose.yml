@@ -1,6 +1,18 @@
 services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   # RabbitMQ service
+      - "15672:15672" # Management interface
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
   auth:
-    image: ifraheem/bs-auth:1.2
+    image: ifraheem/bs-auth:1.4
     container_name: bs-auth
     ports:
       - "8000:8000"
@@ -9,16 +21,18 @@ services:
     restart: always
 
   catalog:
-    image: ifraheem/bs-catalog:1.2
+    image: ifraheem/bs-catalog:1.5
     container_name: bs-catalog
     ports:
       - "5000:5000"
     env_file:
       - .env
+    depends_on:
+      - rabbitmq
     restart: always
 
   order:
-    image: ifraheem/bs-orders:1.1
+    image: ifraheem/bs-orders:1.3
     container_name: bs-orders
     ports:
       - "3000:3000"
@@ -38,18 +52,6 @@ services:
       - catalog
       - order
     restart: always
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    ports:
-      - "5672:5672"   # RabbitMQ service
-      - "15672:15672" # Management interface
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    restart: unless-stopped
 
 volumes:
   rabbitmq_data:

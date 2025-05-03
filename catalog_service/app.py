@@ -12,7 +12,7 @@ from flask import current_app
 from threading import Thread
 from sqlalchemy.orm import scoped_session, sessionmaker
 from flask_cors import CORS
-
+import time
 base_dir = os.path.abspath(os.path.dirname(__file__))
 env_path = os.path.join(base_dir, '.env')  
 
@@ -25,31 +25,40 @@ app.config['RABBITMQ_HOST'] = os.getenv('RABBITMQ_HOST', 'rabbitmq')
 db.init_app(app)
 migrate = Migrate(app, db)
 
+
+
 def start_consumer():
-    try:
-        connection = pika.BlockingConnection(pika.ConnectionParameters(current_app.config['RABBITMQ_HOST']))
-        channel = connection.channel()
-        channel.queue_declare(queue='product_updates')
+    for attempt in range(10):
+        try:
+            print(f"Trying to connect to RabbitMQ (attempt {attempt+1})...")
+            connection = pika.BlockingConnection(
+                pika.ConnectionParameters(current_app.config['RABBITMQ_HOST'])
+            )
+            channel = connection.channel()
+            channel.queue_declare(queue='product_updates')
 
-        def callback(ch, method, properties, body):
-            try:
-                data = json.loads(body)
-                product_id = data['product_id']
-                in_stock = data['in_stock']
+            def callback(ch, method, properties, body):
+                try:
+                    data = json.loads(body)
+                    product_id = data['product_id']
+                    in_stock = data['in_stock']
+                    with app.app_context():
+                        session = Session()
+                        update_product_stock(product_id, in_stock, session)
+                except Exception as e:
+                    print(f"Error processing message: {e}")
 
-                with app.app_context():
-                    session = Session()
-                    update_product_stock(product_id, in_stock, session)
-            except Exception as e:
-                print(f"Error processing message: {e}")
+            channel.basic_consume(queue='product_updates', on_message_callback=callback, auto_ack=True)
+            print(' [*] Waiting for messages. To exit press CTRL+C')
+            channel.start_consuming()
+            break  # Exit loop after successful connection
 
-        channel.basic_consume(queue='product_updates', on_message_callback=callback, auto_ack=True)
-        print(' [*] Waiting for messages. To exit press CTRL+C')
-        channel.start_consuming()
-    except pika.exceptions.AMQPConnectionError:
-        print("Connection to RabbitMQ failed")
-    except Exception as e:
-        print(f"Unhandled exception: {e}")
+        except pika.exceptions.AMQPConnectionError as e:
+            print(f"RabbitMQ connection error: {e}")
+            time.sleep(5)  # wait 5 seconds before retry
+        except Exception as e:
+            print(f"Unhandled exception: {e}")
+            time.sleep(5)
 
 
 def update_product_stock(product_id, in_stock, session):
@@ -153,10 +162,18 @@ def delete_product(product_id):
     db.session.commit()
     return jsonify({'message': 'Product deleted'}), 204
 
-if __name__ == '__main__':
+def start_background_consumer():
     with app.app_context():
+        global Session
         Session = scoped_session(sessionmaker(bind=db.engine))
+        start_consumer()
 
-    thread = Thread(target=start_consumer)
-    thread.start()
+# Start the background thread for RabbitMQ consumer
+thread = Thread(target=start_background_consumer, daemon=True)
+thread.start()
+
+
+
+if __name__ == '__main__':
+
     app.run(host="0.0.0.0", port=5000, debug=True)
