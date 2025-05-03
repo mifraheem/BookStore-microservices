@@ -19,7 +19,7 @@ const BookCard = ({ book }) => {
   const handleBuyNow = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    navigate(`/checkout?product_id=${book.id}`);
+    navigate(`/products/${book.id}`);
   };
 
   return (
