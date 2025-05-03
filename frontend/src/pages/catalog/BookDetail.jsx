@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useCart } from '../../context/CartContext';
-import allBooks from '../../data/books';
+import Cookies from 'js-cookie';
+
+const CATALOG_URL = import.meta.env.VITE_CATALOG_SERVICE;
+const ORDER_URL = import.meta.env.VITE_ORDER_SERVICE;
 
 const BookDetail = () => {
   const { id } = useParams();
@@ -10,221 +12,143 @@ const BookDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  
-  const { addToCart } = useCart();
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [customerName, setCustomerName] = useState('');
+  const [orderSuccess, setOrderSuccess] = useState(null);
+
   const navigate = useNavigate();
-  
-  // Fetch book details
+
   useEffect(() => {
-    setLoading(true);
-    
-    // Simulate API request delay
-    const timer = setTimeout(() => {
+    const fetchBook = async () => {
       try {
-        const foundBook = allBooks.find(b => b.id === parseInt(id));
-        
-        if (foundBook) {
-          setBook(foundBook);
-        } else {
-          setError('Book not found');
-        }
+        const res = await fetch(`${CATALOG_URL}/products/${id}`);
+        const data = await res.json();
+        setBook(data);
       } catch (err) {
         setError('Failed to load book details');
-        console.error(err);
       } finally {
         setLoading(false);
       }
-    }, 500);
-    
-    return () => clearTimeout(timer);
+    };
+
+    fetchBook();
   }, [id]);
 
-  // Handle quantity change
   const handleQuantityChange = (e) => {
     const value = parseInt(e.target.value);
-    if (value > 0 && value <= book.inventory) {
-      setQuantity(value);
+    if (value > 0) setQuantity(value);
+  };
+
+  const handleCheckout = async () => {
+    try {
+      const token = Cookies.get('access_token');
+      const res = await fetch(`${ORDER_URL}orders/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          customer_name: customerName,
+          product_id: book.id,
+          quantity,
+        }),
+      });
+
+      const result = await res.json();
+      if (res.ok) {
+        setOrderSuccess(result.order);
+        setIsCheckoutOpen(false);
+      } else {
+        alert(result.message || 'Order failed');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Checkout failed');
     }
   };
 
-  // Add to cart with specified quantity
-  const handleAddToCart = () => {
-    for (let i = 0; i < quantity; i++) {
-      addToCart(book);
-    }
-  };
-
-  // First letter for image
-  const getFirstLetter = () => {
-    return book?.title.charAt(0).toUpperCase() || 'B';
-  };
-
-  // Generate background color based on book id
   const getBackgroundColor = () => {
-    const colors = [
-      '#E9D5FF', // Purple 200
-      '#DBEAFE', // Blue 100
-      '#D1FAE5', // Green 100
-      '#FEF3C7', // Yellow 100
-      '#FEE2E2', // Red 100
-      '#FFEDD5', // Orange 100
-    ];
+    const colors = ['#E9D5FF', '#DBEAFE', '#D1FAE5', '#FEF3C7', '#FEE2E2', '#FFEDD5'];
     return book ? colors[book.id % colors.length] : colors[0];
   };
 
-  if (loading) {
-    return (
-      <div className="text-center py-12">
-        <p>Loading book details...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-12">
-        <p className="error-message">{error}</p>
-        <button 
-          className="button button-primary mt-4"
-          onClick={() => navigate('/products')}
-        >
-          Back to Books
-        </button>
-      </div>
-    );
-  }
+  if (loading) return <div className="text-center py-12">Loading book details...</div>;
+  if (error) return <div className="text-center py-12">{error}</div>;
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <button 
-        className="button mb-6"
-        onClick={() => navigate('/products')}
-      >
-        &larr; Back to Books
-      </button>
-      
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
+      <button className="button mb-6" onClick={() => navigate('/products')}>&larr; Back to Books</button>
+
       <div className="card">
         <div className="grid md:grid-cols-2 gap-8">
           <div>
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5 }}
+            <div
               className="book-image"
-              style={{ 
-                height: '300px',
-                backgroundColor: getBackgroundColor(),
-                borderRadius: 'var(--radius-lg)'
-              }}
+              style={{ height: '300px', backgroundColor: getBackgroundColor(), borderRadius: '12px' }}
             >
-              <span style={{ fontSize: '6rem' }}>{getFirstLetter()}</span>
-            </motion.div>
+              <span style={{ fontSize: '6rem' }}>{book.name.charAt(0)}</span>
+            </div>
           </div>
-          
+
           <div>
-            <motion.h2
-              initial={{ y: -20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.1 }}
-            >
-              {book.title}
-            </motion.h2>
-            
-            <motion.p
-              initial={{ y: -20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="book-author"
-            >
-              by {book.author}
-            </motion.p>
-            
-            <motion.p
-              initial={{ y: -20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="book-price"
-              style={{ fontSize: '1.5rem', marginBottom: 'var(--space-4)' }}
-            >
-              ${book.price.toFixed(2)}
-            </motion.p>
-            
-            <motion.div
-              initial={{ y: -20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="mb-4"
-            >
-              <p>{book.description}</p>
-            </motion.div>
-            
-            <motion.div
-              initial={{ y: -20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="grid grid-cols-2 gap-4 mb-6"
-            >
-              <div>
-                <label className="info-label">ISBN</label>
-                <p>{book.isbn}</p>
-              </div>
-              <div>
-                <label className="info-label">Language</label>
-                <p>{book.language}</p>
-              </div>
-              <div>
-                <label className="info-label">Pages</label>
-                <p>{book.pageCount}</p>
-              </div>
-              <div>
-                <label className="info-label">Publisher</label>
-                <p>{book.publisher}</p>
-              </div>
-              <div>
-                <label className="info-label">Published Date</label>
-                <p>{new Date(book.publishedDate).toLocaleDateString()}</p>
-              </div>
-              <div>
-                <label className="info-label">In Stock</label>
-                <p>{book.inventory} copies</p>
-              </div>
-            </motion.div>
-            
-            <motion.div
-              initial={{ y: -20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="flex items-end gap-4"
-            >
+            <h2>{book.name}</h2>
+            <p className="book-price text-lg font-semibold mb-2">${book.price.toFixed(2)}</p>
+            <p className="mb-4">{book.description}</p>
+            <p className="mb-2">In Stock: {book.in_stock ? 'Yes' : 'No'}</p>
+
+            <div className="flex items-end gap-4 mt-4">
               <div className="form-group" style={{ width: '80px' }}>
-                <label htmlFor="quantity">Quantity</label>
+                <label htmlFor="quantity">Qty</label>
                 <input
                   id="quantity"
                   type="number"
                   min="1"
-                  max={book.inventory}
                   value={quantity}
                   onChange={handleQuantityChange}
                 />
               </div>
-              
+
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="button button-primary"
-                onClick={handleAddToCart}
+                onClick={() => setIsCheckoutOpen(true)}
                 style={{ height: '40px' }}
               >
-                Add to Cart
+                Buy Now
               </motion.button>
-            </motion.div>
+            </div>
+
+            {orderSuccess && (
+              <div className="mt-4 text-green-600">
+                ✅ Order #{orderSuccess.id} placed successfully!
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {isCheckoutOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
+            <h3 className="text-xl font-bold mb-4">Confirm Order</h3>
+            <label className="block mb-2 text-sm font-medium">Full Name</label>
+            <input
+              type="text"
+              className="input w-full mb-4"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="Enter your full name"
+            />
+
+            <div className="flex justify-end gap-3">
+              <button className="button" onClick={() => setIsCheckoutOpen(false)}>Cancel</button>
+              <button className="button button-primary" onClick={handleCheckout}>Place Order</button>
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 };

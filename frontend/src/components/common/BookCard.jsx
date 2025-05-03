@@ -1,9 +1,9 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useCart } from '../../context/CartContext';
+import './BookCard.css'; // Custom styles
 
 const BookCard = ({ book }) => {
-  const { addToCart } = useCart();
+  const navigate = useNavigate();
 
   const title = book?.name || 'Untitled';
   const firstLetter = title.charAt(0).toUpperCase();
@@ -16,10 +16,10 @@ const BookCard = ({ book }) => {
     return colors[id % colors.length];
   };
 
-  const handleAddToCart = (e) => {
+  const handleBuyNow = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    addToCart(book);
+    navigate(`/checkout?product_id=${book.id}`);
   };
 
   return (
@@ -45,18 +45,20 @@ const BookCard = ({ book }) => {
         <div className="book-content">
           <h3 className="book-title">{title}</h3>
           <p className="book-author">by Author #{book?.author || 'N/A'}</p>
-          <div className="flex justify-between items-center">
+
+          <div className="price-buy-wrapper">
             <p className="book-price">${book?.price?.toFixed(2) || '0.00'}</p>
             <motion.button
-              className="button button-primary"
+              className="buy-now-btn"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={handleAddToCart}
+              onClick={handleBuyNow}
             >
-              Add to Cart
+              Buy Now
             </motion.button>
           </div>
         </div>
+
       </Link>
     </motion.div>
   );

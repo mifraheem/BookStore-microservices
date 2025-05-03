@@ -1,0 +1,29 @@
+.price-buy-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.book-price {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e40af; /* blue-800 */
+}
+
+.buy-now-btn {
+  background-color: #1d4ed8; /* blue-700 */
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: background-color 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.buy-now-btn:hover {
+  background-color: #2563eb; /* blue-600 */
+}
